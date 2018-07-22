@@ -7,7 +7,6 @@ namespace Mtk.LazyCache
     /// <summary>
     /// See https://blogs.msdn.microsoft.com/pfxteam/2011/01/15/asynclazyt/
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     public class AsyncLazy<T> : Lazy<Task<T>>
     {
         public AsyncLazy(Func<T> valueFactory) :
