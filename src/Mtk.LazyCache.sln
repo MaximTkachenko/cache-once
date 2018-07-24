@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mtk.LazyCache", "Mtk.LazyCa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mtk.LazyCache.Tests", "Mtk.LazyCache.Tests\Mtk.LazyCache.Tests.csproj", "{1E59A4BC-3C31-4AAD-A048-E7C000963A71}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mtk.LazyCache.Benchmarks", "Mtk.LazyCache.Benchmarks\Mtk.LazyCache.Benchmarks.csproj", "{09EB39D5-B845-4993-B228-FD10699214DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mtk.LazyCache.Benchmarks", "Mtk.LazyCache.Benchmarks\Mtk.LazyCache.Benchmarks.csproj", "{C72B5E44-C784-4D83-93D0-17A1F27B35ED}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{1E59A4BC-3C31-4AAD-A048-E7C000963A71}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E59A4BC-3C31-4AAD-A048-E7C000963A71}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E59A4BC-3C31-4AAD-A048-E7C000963A71}.Release|Any CPU.Build.0 = Release|Any CPU
-		{09EB39D5-B845-4993-B228-FD10699214DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{09EB39D5-B845-4993-B228-FD10699214DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{09EB39D5-B845-4993-B228-FD10699214DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{09EB39D5-B845-4993-B228-FD10699214DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C72B5E44-C784-4D83-93D0-17A1F27B35ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C72B5E44-C784-4D83-93D0-17A1F27B35ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C72B5E44-C784-4D83-93D0-17A1F27B35ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C72B5E44-C784-4D83-93D0-17A1F27B35ED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
