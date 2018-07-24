@@ -7,7 +7,7 @@ namespace Mtk.LazyCache
     /// <summary>
     /// See https://blogs.msdn.microsoft.com/pfxteam/2011/01/15/asynclazyt/
     /// </summary>
-    public class AsyncLazy<T> : Lazy<Task<T>>
+    internal sealed class AsyncLazy<T> : Lazy<Task<T>>
     {
         public AsyncLazy(Func<T> valueFactory) :
             base(() => Task.Factory.StartNew(valueFactory))
