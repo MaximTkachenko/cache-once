@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Mtk.LazyCache.Tests
 {
-    public class MemoryCacheExtTests
+    public class LazyCacheTests
     {
         [Theory]
         [InlineData(true)]
