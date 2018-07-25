@@ -10,9 +10,9 @@ namespace Mtk.LazyCache
     /// </summary>
     internal sealed class KeyedSemaphoreSlim
     {
-        private sealed class RefCounted
+        private sealed class RefCounter
         {
-            public RefCounted(SemaphoreSlim value)
+            public RefCounter(SemaphoreSlim value)
             {
                 RefCount = 1;
                 Value = value;
@@ -22,12 +22,12 @@ namespace Mtk.LazyCache
             public SemaphoreSlim Value { get; }
         }
 
-        private static readonly Dictionary<object, RefCounted> SemaphoreSlims
-            = new Dictionary<object, RefCounted>();
+        private static readonly Dictionary<object, RefCounter> SemaphoreSlims
+            = new Dictionary<object, RefCounter>();
 
         private SemaphoreSlim GetOrCreate(object key)
         {
-            RefCounted item;
+            RefCounter item;
             lock (SemaphoreSlims)
             {
                 if (SemaphoreSlims.TryGetValue(key, out item))
@@ -36,7 +36,7 @@ namespace Mtk.LazyCache
                 }
                 else
                 {
-                    item = new RefCounted(new SemaphoreSlim(1, 1));
+                    item = new RefCounter(new SemaphoreSlim(1, 1));
                     SemaphoreSlims[key] = item;
                 }
             }
@@ -66,7 +66,7 @@ namespace Mtk.LazyCache
 
             public void Dispose()
             {
-                RefCounted item;
+                RefCounter item;
                 lock (SemaphoreSlims)
                 {
                     item = SemaphoreSlims[_key];
