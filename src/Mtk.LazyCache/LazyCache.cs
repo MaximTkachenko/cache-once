@@ -20,12 +20,32 @@ namespace Mtk.LazyCache
 
         public T LazyGetOrCreate<T>(object key, Func<T> factory, TimeSpan ttl)
         {
+            return LazyGetOrCreate(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
+        }
+
+        public async Task<T> LazyGetOrCreateAsync<T>(object key, Func<Task<T>> factory, TimeSpan ttl)
+        {
+            return await LazyGetOrCreateAsync(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
+        }
+
+        public T LazyGetOrCreate<T>(object key, Func<T> factory, DateTimeOffset expiresIn)
+        {
+            return LazyGetOrCreate(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
+        }
+
+        public async Task<T> LazyGetOrCreateAsync<T>(object key, Func<Task<T>> factory, DateTimeOffset expiresIn)
+        {
+            return await LazyGetOrCreateAsync(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
+        }
+
+        private T LazyGetOrCreate<T>(object key, Func<T> factory, Action<ICacheEntry> setExpiration)
+        {
             Lazy<T> value;
             Func<Lazy<T>> action = () =>
             {
                 return _cache.GetOrCreate(key, entry =>
                 {
-                    entry.AbsoluteExpirationRelativeToNow = ttl;
+                    setExpiration(entry);
                     return new Lazy<T>(factory.Invoke);
                 });
             };
@@ -61,18 +81,17 @@ namespace Mtk.LazyCache
             }
         }
 
-        public async Task<T> LazyGetOrCreateAsync<T>(object key, Func<Task<T>> factory, TimeSpan ttl)
+        public async Task<T> LazyGetOrCreateAsync<T>(object key, Func<Task<T>> factory, Action<ICacheEntry> setExpiration)
         {
             AsyncLazy<T> value;
             Func<AsyncLazy<T>> action = () =>
             {
                 return _cache.GetOrCreate(key, entry =>
                 {
-                    entry.AbsoluteExpirationRelativeToNow = ttl;
+                    setExpiration(entry);
                     return new AsyncLazy<T>(() => factory.Invoke());
                 });
             };
-
 
             if (_lockPerKey)
             {
