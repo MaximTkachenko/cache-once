@@ -60,5 +60,7 @@ namespace Mtk.LazyCache.Tests
             Assert.True(results.All(x => x == results[0]));
             Assert.Equal(1, service.CountOfInitializations);
         }
+
+        //todo negative test with exceptions
     }
 }
