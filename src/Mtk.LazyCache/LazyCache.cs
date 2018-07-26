@@ -95,14 +95,14 @@ namespace Mtk.LazyCache
 
             if (_lockPerKey)
             {
-                using (_keyedLock.Lock(key))
+                using (await _keyedLock.LockAsync(key))
                 {
                     value = action.Invoke();
                 }
             }
             else
             {
-                _lock.Wait();
+                await _lock.WaitAsync().ConfigureAwait(false);
                 try
                 {
                     value = action.Invoke();
