@@ -12,7 +12,7 @@ namespace Mtk.LazyCache.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task LazyGetOrCreate_MultipleThreads_InitOnceAndAllValuesTheSame(bool perKey)
+        public async Task GetOrCreate_MultipleThreads_InitOnceAndAllValuesTheSame(bool perKey)
         {
             var cnt = 20;
             var cache = new LazyCache(new MemoryCache(new MemoryCacheOptions()), perKey);
@@ -38,7 +38,7 @@ namespace Mtk.LazyCache.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task LazyGetOrCreateAsync_MultipleThreads_InitOnceAndAllValuesTheSame(bool perKey)
+        public async Task GetOrCreateAsync_MultipleThreads_InitOnceAndAllValuesTheSame(bool perKey)
         {
             var cnt = 20;
             var cache = new LazyCache(new MemoryCache(new MemoryCacheOptions()), perKey);
