@@ -24,7 +24,7 @@ namespace Mtk.LazyCache.Tests
             {
                 tasks[i] = Task.Run(() =>
                 {
-                    int val = cache.LazyGetOrCreate(cnt, () => service.Init(), TimeSpan.FromDays(1));
+                    int val = cache.GetOrCreate(cnt, () => service.Init(), TimeSpan.FromDays(1));
                     bag.Add(val);
                 });
             }
@@ -50,7 +50,7 @@ namespace Mtk.LazyCache.Tests
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    int val = await cache.LazyGetOrCreateAsync(cnt, () => service.InitAsync(), TimeSpan.FromDays(1));
+                    int val = await cache.GetOrCreateAsync(cnt, () => service.InitAsync(), TimeSpan.FromDays(1));
                     bag.Add(val);
                 });
             }

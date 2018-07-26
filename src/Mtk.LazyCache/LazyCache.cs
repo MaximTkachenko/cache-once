@@ -5,7 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Mtk.LazyCache
 {
-    public class LazyCache
+    public sealed class LazyCache
     {
         private readonly KeyedSemaphoreSlim _keyedLock = new KeyedSemaphoreSlim();
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
@@ -18,27 +18,27 @@ namespace Mtk.LazyCache
             _lockPerKey = lockPerKey;
         }
 
-        public T LazyGetOrCreate<T>(object key, Func<T> factory, TimeSpan ttl)
+        public T GetOrCreate<T>(object key, Func<T> factory, TimeSpan ttl)
         {
-            return LazyGetOrCreate(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
+            return GetOrCreate(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
         }
 
-        public async Task<T> LazyGetOrCreateAsync<T>(object key, Func<Task<T>> factory, TimeSpan ttl)
+        public async Task<T> GetOrCreateAsync<T>(object key, Func<Task<T>> factory, TimeSpan ttl)
         {
-            return await LazyGetOrCreateAsync(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
+            return await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
         }
 
-        public T LazyGetOrCreate<T>(object key, Func<T> factory, DateTimeOffset expiresIn)
+        public T GetOrCreate<T>(object key, Func<T> factory, DateTimeOffset expiresIn)
         {
-            return LazyGetOrCreate(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
+            return GetOrCreate(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
         }
 
-        public async Task<T> LazyGetOrCreateAsync<T>(object key, Func<Task<T>> factory, DateTimeOffset expiresIn)
+        public async Task<T> GetOrCreateAsync<T>(object key, Func<Task<T>> factory, DateTimeOffset expiresIn)
         {
-            return await LazyGetOrCreateAsync(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
+            return await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
         }
 
-        private T LazyGetOrCreate<T>(object key, Func<T> factory, Action<ICacheEntry> setExpiration)
+        private T GetOrCreate<T>(object key, Func<T> factory, Action<ICacheEntry> setExpiration)
         {
             Lazy<T> value;
             Func<Lazy<T>> action = () =>
@@ -81,7 +81,7 @@ namespace Mtk.LazyCache
             }
         }
 
-        public async Task<T> LazyGetOrCreateAsync<T>(object key, Func<Task<T>> factory, Action<ICacheEntry> setExpiration)
+        private async Task<T> GetOrCreateAsync<T>(object key, Func<Task<T>> factory, Action<ICacheEntry> setExpiration)
         {
             AsyncLazy<T> value;
             Func<AsyncLazy<T>> action = () =>
