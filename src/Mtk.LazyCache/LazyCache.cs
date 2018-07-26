@@ -5,7 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Mtk.LazyCache
 {
-    public sealed class LazyCache
+    public sealed class LazyCache : ILazyCache
     {
         private readonly KeyedSemaphoreSlim _keyedLock = new KeyedSemaphoreSlim();
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
