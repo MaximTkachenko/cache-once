@@ -80,6 +80,8 @@ namespace Mtk.LazyCache.Benchmarks
             await Task.WhenAll(tasks);
             return tasks[0].Result;
         }
+
+        //todo add benchmark for different keys
     }
 
     class Program
