@@ -6,12 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.11.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.1.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Mtk.LazyCache\Mtk.LazyCache.csproj" />
+    <PackageReference Include="Polly" Version="6.1.0" />
   </ItemGroup>
 
 </Project>
