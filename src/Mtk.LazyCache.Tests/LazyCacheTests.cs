@@ -61,6 +61,35 @@ namespace Mtk.LazyCache.Tests
             Assert.Equal(1, service.CountOfInitializations);
         }
 
-        //todo negative test with exceptions
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GetOrCreateAsync_MultipleThreadsCallFailedMethod_FailedKeyRemovedThenInitAgain(bool perKey)
+        {
+            var cnt = 10;
+            var cache = new LazyCache(new MemoryCache(new MemoryCacheOptions()), perKey);
+            var service = new TestInitializationService();
+            var bag = new ConcurrentBag<int>();
+
+            var tasks = new Task[cnt];
+            for (int i = 0; i < cnt; i++)
+            {
+                tasks[i] = Task.Run(async () =>
+                {
+                    int val = await cache.GetOrCreateAsync(cnt, async () => await service.FailedHttpAsync(), TimeSpan.FromDays(1));
+                    bag.Add(val);
+                });
+            }
+            await Task.WhenAll(tasks);
+            await Task.Run(async () =>
+            {
+                int val = await cache.GetOrCreateAsync(cnt, async () => await service.FailedHttpAsync(), TimeSpan.FromDays(1));
+                bag.Add(val);
+            });
+
+            var results = bag.ToArray();
+            Assert.True(results.All(x => x == default(int)));
+            Assert.Equal(2, service.CountOfInitializations);
+        }
     }
 }

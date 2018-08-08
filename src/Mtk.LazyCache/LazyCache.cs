@@ -77,7 +77,7 @@ namespace Mtk.LazyCache
             catch
             {
                 _cache.Remove(key);
-                throw;
+                return default(T);
             }
         }
 
@@ -120,7 +120,7 @@ namespace Mtk.LazyCache
             catch
             {
                 _cache.Remove(key);
-                throw;
+                return default(T);
             }
         }
     }
