@@ -82,6 +82,7 @@ namespace Mtk.LazyCache.Benchmarks
         }
 
         //todo add benchmark for different keys
+        //todo add benchmark for different number of threads
     }
 
     class Program
