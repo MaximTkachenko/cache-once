@@ -83,6 +83,9 @@ namespace Mtk.LazyCache.Benchmarks
 
         //todo add benchmark for different keys
         //todo add benchmark for different number of threads
+        //https://benchmarkdotnet.org/articles/features/parameterization.html
+        //https://benchmarkdotnet.org/articles/configs/diagnosers.html
+
     }
 
     class Program
