@@ -23,9 +23,10 @@ namespace Mtk.LazyCache.Benchmarks
         }
 
         [Benchmark]
-        public async Task<string> NoChache()
+        public async Task<string> ChacheNoLock()
         {
             var urls = Urls.Split('|');
+            var cache = new MemoryCache(new MemoryCacheOptions());
             var tasks = new Task<string>[DegreeOfParallelism];
             for (int i = 0; i < DegreeOfParallelism; i++)
             {
@@ -33,8 +34,13 @@ namespace Mtk.LazyCache.Benchmarks
                 {
                     tasks[i] = Task.Run(async () =>
                     {
-                        var response = await _httpClient.GetAsync(url);
-                        return await response.Content.ReadAsStringAsync();
+                        return await cache.GetOrCreateAsync(url,
+                            async entry =>
+                            {
+                                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
+                                var response = await _httpClient.GetAsync(url);
+                                return await response.Content.ReadAsStringAsync();
+                            });
                     });
                 }
             }
@@ -44,7 +50,7 @@ namespace Mtk.LazyCache.Benchmarks
         }
 
         [Benchmark]
-        public async Task<string> LazyCacheGlobalLock()
+        public async Task<string> CacheGlobalLock()
         {
             var urls = Urls.Split('|');
             var cache = new LazyCache(new MemoryCache(new MemoryCacheOptions()), false);
@@ -71,7 +77,7 @@ namespace Mtk.LazyCache.Benchmarks
         }
 
         [Benchmark]
-        public async Task<string> LazyCacheLockPerKey()
+        public async Task<string> CacheLockPerKey()
         {
             var urls = Urls.Split('|');
             var cache = new LazyCache(new MemoryCache(new MemoryCacheOptions()), true);

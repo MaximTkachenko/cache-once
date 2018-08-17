@@ -76,14 +76,14 @@ namespace Mtk.LazyCache.Tests
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    int val = await cache.GetOrCreateAsync(cnt, async () => await service.FailedAsync(), TimeSpan.FromDays(1));
+                    int val = await cache.GetOrCreateAsync(cnt, () => service.FailedAsync(), TimeSpan.FromDays(1));
                     bag.Add(val);
                 });
             }
             await Task.WhenAll(tasks);
             await Task.Run(async () =>
             {
-                int val = await cache.GetOrCreateAsync(cnt, async () => await service.FailedAsync(), TimeSpan.FromDays(1));
+                int val = await cache.GetOrCreateAsync(cnt, () => service.FailedAsync(), TimeSpan.FromDays(1));
                 bag.Add(val);
             });
 
@@ -108,14 +108,14 @@ namespace Mtk.LazyCache.Tests
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    int val = await cache.GetOrCreateAsync(cnt, async () => await service.UnstablepWithRetryAsync(successAfter), TimeSpan.FromDays(1));
+                    int val = await cache.GetOrCreateAsync(cnt, () => service.UnstablepWithRetryAsync(successAfter), TimeSpan.FromDays(1));
                     bag.Add(val);
                 });
             }
             await Task.WhenAll(tasks);
             await Task.Run(async () =>
             {
-                int val = await cache.GetOrCreateAsync(cnt, async () => await service.UnstablepWithRetryAsync(successAfter), TimeSpan.FromDays(1));
+                int val = await cache.GetOrCreateAsync(cnt, () => service.UnstablepWithRetryAsync(successAfter), TimeSpan.FromDays(1));
                 bag.Add(val);
             });
 
