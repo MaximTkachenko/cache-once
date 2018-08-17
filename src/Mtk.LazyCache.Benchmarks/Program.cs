@@ -23,7 +23,7 @@ namespace Mtk.LazyCache.Benchmarks
         }
 
         [Benchmark]
-        public async Task<string> ChacheNoLock()
+        public async Task<string> CacheNoLock()
         {
             var urls = Urls.Split('|');
             var cache = new MemoryCache(new MemoryCacheOptions());
