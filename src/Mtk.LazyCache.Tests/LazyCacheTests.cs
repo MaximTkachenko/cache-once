@@ -66,7 +66,7 @@ namespace Mtk.LazyCache.Tests
         [InlineData(false)]
         public async Task GetOrCreateAsync_MultipleThreadsCallFailedMethod_FailedKeyRemovedThenInitAgain(bool perKey)
         {
-            var cnt = 10;
+            var cnt = 20;
             var cache = new LazyCache(new MemoryCache(new MemoryCacheOptions()), perKey);
             var service = new TestInitializationService();
             var bag = new ConcurrentBag<int>();
@@ -76,14 +76,14 @@ namespace Mtk.LazyCache.Tests
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    int val = await cache.GetOrCreateAsync(cnt, async () => await service.FailedHttpAsync(), TimeSpan.FromDays(1));
+                    int val = await cache.GetOrCreateAsync(cnt, async () => await service.FailedAsync(), TimeSpan.FromDays(1));
                     bag.Add(val);
                 });
             }
             await Task.WhenAll(tasks);
             await Task.Run(async () =>
             {
-                int val = await cache.GetOrCreateAsync(cnt, async () => await service.FailedHttpAsync(), TimeSpan.FromDays(1));
+                int val = await cache.GetOrCreateAsync(cnt, async () => await service.FailedAsync(), TimeSpan.FromDays(1));
                 bag.Add(val);
             });
 
@@ -95,33 +95,33 @@ namespace Mtk.LazyCache.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task GetOrCreateAsync_MultipleThreadsCallUnstableHttpWithRetryAsync_ValueFinallyInitiated(bool perKey)
+        public async Task GetOrCreateAsync_MultipleThreadsCallUnstableMethodWithRetryAsync_ValueFinallyInitiated(bool perKey)
         {
-            var cnt = 10;
+            var cnt = 20;
             var cache = new LazyCache(new MemoryCache(new MemoryCacheOptions()), perKey);
             var service = new TestInitializationService();
             var bag = new ConcurrentBag<int>();
-            int successAfterIteration = 4;
+            int successAfter = 4;
 
             var tasks = new Task[cnt];
             for (int i = 0; i < cnt; i++)
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    int val = await cache.GetOrCreateAsync(cnt, async () => await service.UnstableHttpWithRetryAsync(successAfterIteration), TimeSpan.FromDays(1));
+                    int val = await cache.GetOrCreateAsync(cnt, async () => await service.UnstablepWithRetryAsync(successAfter), TimeSpan.FromDays(1));
                     bag.Add(val);
                 });
             }
             await Task.WhenAll(tasks);
             await Task.Run(async () =>
             {
-                int val = await cache.GetOrCreateAsync(cnt, async () => await service.UnstableHttpWithRetryAsync(successAfterIteration), TimeSpan.FromDays(1));
+                int val = await cache.GetOrCreateAsync(cnt, async () => await service.UnstablepWithRetryAsync(successAfter), TimeSpan.FromDays(1));
                 bag.Add(val);
             });
 
             var results = bag.ToArray();
             Assert.True(results.All(x => x == 200));
-            Assert.Equal(successAfterIteration, service.CountOfInitializations);
+            Assert.Equal(successAfter, service.CountOfInitializations);
         }
     }
 }

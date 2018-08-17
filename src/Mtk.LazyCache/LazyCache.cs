@@ -83,13 +83,13 @@ namespace Mtk.LazyCache
 
         private async Task<T> GetOrCreateAsync<T>(object key, Func<Task<T>> factory, Action<ICacheEntry> setExpiration)
         {
-            AsyncLazy<T> value;
-            Func<AsyncLazy<T>> action = () =>
+            Task<T> value;
+            Func<Task<T>> action = () =>
             {
                 return _cache.GetOrCreate(key, entry =>
                 {
                     setExpiration(entry);
-                    return new AsyncLazy<T>(() => factory.Invoke());
+                    return factory.Invoke();
                 });
             };
 
@@ -115,7 +115,7 @@ namespace Mtk.LazyCache
 
             try
             {
-                return await value.Value.ConfigureAwait(false);
+                return await value.ConfigureAwait(false);
             }
             catch
             {

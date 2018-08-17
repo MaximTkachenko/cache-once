@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,8 +6,6 @@ namespace Mtk.LazyCache.Tests
 {
     public class TestInitializationService
     {
-        private readonly HttpClient _client = new HttpClient{ Timeout = TimeSpan.FromMilliseconds(100) };
-
         public int CountOfInitializations;
 
         public int Init()
@@ -25,14 +22,14 @@ namespace Mtk.LazyCache.Tests
             return Thread.CurrentThread.ManagedThreadId;
         }
 
-        public async Task<int> FailedHttpAsync()
+        public async Task<int> FailedAsync()
         {
             Interlocked.Increment(ref CountOfInitializations);
             await Task.Delay(100);
-            return (int)(await _client.GetAsync("http://localhost:1")).StatusCode;
+            throw new Exception("doesn't work");
         }
 
-        public async Task<int> UnstableHttpWithRetryAsync(int successAfterIteration)
+        public async Task<int> UnstablepWithRetryAsync(int successAfter)
         {
             int retryCount = 5;
             int retryIteration = 0;
@@ -42,7 +39,7 @@ namespace Mtk.LazyCache.Tests
             {
                 try
                 {
-                    return await UnstableHttpAsync(successAfterIteration);
+                    return await UnstableHttpAsync(successAfter);
                 }
                 catch
                 {
@@ -57,10 +54,15 @@ namespace Mtk.LazyCache.Tests
             }
         }
 
-        private async Task<int> UnstableHttpAsync(int successAfterIteration)
+        private async Task<int> UnstableHttpAsync(int successAfter)
         {
             var value = Interlocked.Increment(ref CountOfInitializations);
-            return (int)(await _client.GetAsync(value == successAfterIteration ? "http://mtkachenko.me" : "http://localhost:1")).StatusCode;
+            await Task.Delay(10);
+            if (value == successAfter)
+            {
+                return 200;
+            }
+            throw new Exception("doesn't work");
         }
     }
 }

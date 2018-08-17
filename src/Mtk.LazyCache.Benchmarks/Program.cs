@@ -9,9 +9,13 @@ namespace Mtk.LazyCache.Benchmarks
 {
     public class LazyCacheForHttpBenchmark
     {
-        private const int DegreeOfParallelism = 20;
-        private const string Url = "http://mtkachenko.me";
         private readonly HttpClient _httpClient;
+
+        [Params(10, 20)]
+        public int DegreeOfParallelism { get; set; }
+
+        [Params("http://mtkachenko.me")]//, "http://mtkachenko.me|https://ya.ru", "http://mtkachenko.me|https://ya.ru|https://google.com")]
+        public string Urls { get; set; }
 
         public LazyCacheForHttpBenchmark()
         {
@@ -21,14 +25,18 @@ namespace Mtk.LazyCache.Benchmarks
         [Benchmark]
         public async Task<string> NoChache()
         {
+            var urls = Urls.Split('|');
             var tasks = new Task<string>[DegreeOfParallelism];
             for (int i = 0; i < DegreeOfParallelism; i++)
             {
-                tasks[i] = Task.Run(async () =>
+                foreach (var url in urls)
                 {
-                    var response =  await _httpClient.GetAsync(Url);
-                    return await response.Content.ReadAsStringAsync();
-                });
+                    tasks[i] = Task.Run(async () =>
+                    {
+                        var response = await _httpClient.GetAsync(url);
+                        return await response.Content.ReadAsStringAsync();
+                    });
+                }
             }
 
             await Task.WhenAll(tasks);
@@ -38,20 +46,24 @@ namespace Mtk.LazyCache.Benchmarks
         [Benchmark]
         public async Task<string> LazyCacheGlobalLock()
         {
+            var urls = Urls.Split('|');
             var cache = new LazyCache(new MemoryCache(new MemoryCacheOptions()), false);
             var tasks = new Task<string>[DegreeOfParallelism];
             for (int i = 0; i < DegreeOfParallelism; i++)
             {
-                tasks[i] = Task.Run(async () =>
+                foreach (var url in urls)
                 {
-                    return await cache.GetOrCreateAsync(Url, 
-                        async () =>
-                        {
-                            var response = await _httpClient.GetAsync(Url);
-                            return await response.Content.ReadAsStringAsync();
-                        }, 
-                        TimeSpan.FromHours(1));
-                });
+                    tasks[i] = Task.Run(async () =>
+                    {
+                        return await cache.GetOrCreateAsync(url,
+                            async () =>
+                            {
+                                var response = await _httpClient.GetAsync(url);
+                                return await response.Content.ReadAsStringAsync();
+                            },
+                            TimeSpan.FromHours(1));
+                    });
+                }
             }
 
             await Task.WhenAll(tasks);
@@ -61,31 +73,31 @@ namespace Mtk.LazyCache.Benchmarks
         [Benchmark]
         public async Task<string> LazyCacheLockPerKey()
         {
+            var urls = Urls.Split('|');
             var cache = new LazyCache(new MemoryCache(new MemoryCacheOptions()), true);
             var tasks = new Task<string>[DegreeOfParallelism];
             for (int i = 0; i < DegreeOfParallelism; i++)
             {
-                tasks[i] = Task.Run(async () =>
+                foreach (var url in urls)
                 {
-                    return await cache.GetOrCreateAsync(Url,
-                        async () =>
-                        {
-                            var response = await _httpClient.GetAsync(Url);
-                            return await response.Content.ReadAsStringAsync();
-                        },
-                        TimeSpan.FromHours(1));
-                });
+                    tasks[i] = Task.Run(async () =>
+                    {
+                        return await cache.GetOrCreateAsync(url,
+                            async () =>
+                            {
+                                var response = await _httpClient.GetAsync(url);
+                                return await response.Content.ReadAsStringAsync();
+                            },
+                            TimeSpan.FromHours(1));
+                    });
+                }
             }
 
             await Task.WhenAll(tasks);
             return tasks[0].Result;
         }
 
-        //todo add benchmark for different keys
-        //todo add benchmark for different number of threads
-        //https://benchmarkdotnet.org/articles/features/parameterization.html
         //https://benchmarkdotnet.org/articles/configs/diagnosers.html
-
     }
 
     class Program
