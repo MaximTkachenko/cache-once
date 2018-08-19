@@ -1,1 +1,1 @@
-# lazycache
+# cache-once
