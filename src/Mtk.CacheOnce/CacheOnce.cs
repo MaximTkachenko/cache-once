@@ -3,16 +3,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace Mtk.LazyCache
+namespace Mtk.CacheOnce
 {
-    public sealed class LazyCache : ILazyCache
+    public sealed class CacheOnce : ICacheOnce
     {
         private readonly KeyedSemaphoreSlim _keyedLock = new KeyedSemaphoreSlim();
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
         private readonly IMemoryCache _cache;
         private readonly bool _lockPerKey;
 
-        public LazyCache(IMemoryCache cache, bool lockPerKey)
+        public CacheOnce(IMemoryCache cache, bool lockPerKey)
         {
             _cache = cache;
             _lockPerKey = lockPerKey;

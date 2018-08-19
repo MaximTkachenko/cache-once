@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Mtk.LazyCache.Tests
+namespace Mtk.CacheOnce.Tests
 {
     public class TestInitializationService
     {

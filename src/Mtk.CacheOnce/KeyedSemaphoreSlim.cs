@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Mtk.LazyCache
+namespace Mtk.CacheOnce
 {
     /// <summary>
     /// Slightly modified https://stackoverflow.com/questions/31138179/asynchronous-locking-based-on-a-key

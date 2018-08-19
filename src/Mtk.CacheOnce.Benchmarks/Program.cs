@@ -5,7 +5,7 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace Mtk.LazyCache.Benchmarks
+namespace Mtk.CacheOnce.Benchmarks
 {
     public class LazyCacheForHttpBenchmark
     {
@@ -53,7 +53,7 @@ namespace Mtk.LazyCache.Benchmarks
         public async Task<string> CacheGlobalLock()
         {
             var urls = Urls.Split('|');
-            var cache = new LazyCache(new MemoryCache(new MemoryCacheOptions()), false);
+            var cache = new Mtk.CacheOnce.CacheOnce(new MemoryCache(new MemoryCacheOptions()), false);
             var tasks = new Task<string>[DegreeOfParallelism];
             for (int i = 0; i < DegreeOfParallelism; i++)
             {
@@ -80,7 +80,7 @@ namespace Mtk.LazyCache.Benchmarks
         public async Task<string> CacheLockPerKey()
         {
             var urls = Urls.Split('|');
-            var cache = new LazyCache(new MemoryCache(new MemoryCacheOptions()), true);
+            var cache = new Mtk.CacheOnce.CacheOnce(new MemoryCache(new MemoryCacheOptions()), true);
             var tasks = new Task<string>[DegreeOfParallelism];
             for (int i = 0; i < DegreeOfParallelism; i++)
             {
