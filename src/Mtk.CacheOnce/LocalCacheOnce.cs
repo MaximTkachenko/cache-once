@@ -5,38 +5,46 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Mtk.CacheOnce
 {
-    public sealed class CacheOnce : ICacheOnce
+    public sealed class LocalCacheOnce : ICacheOnce
     {
         private readonly KeyedSemaphoreSlim _keyedLock = new KeyedSemaphoreSlim();
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
         private readonly IMemoryCache _cache;
         private readonly bool _lockPerKey;
 
-        public CacheOnce(IMemoryCache cache, bool lockPerKey)
+        public LocalCacheOnce(IMemoryCache cache, bool lockPerKey)
         {
             _cache = cache;
             _lockPerKey = lockPerKey;
         }
 
-        public T GetOrCreate<T>(object key, Func<T> factory, TimeSpan ttl)
-        {
-            return GetOrCreate(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
-        }
+        public T GetOrCreate<T>(int key, Func<T> factory, TimeSpan ttl) =>
+            GetOrCreate(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
 
-        public async Task<T> GetOrCreateAsync<T>(object key, Func<Task<T>> factory, TimeSpan ttl)
-        {
-            return await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
-        }
+        public T GetOrCreate<T>(string key, Func<T> factory, TimeSpan ttl) =>
+            GetOrCreate(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
 
-        public T GetOrCreate<T>(object key, Func<T> factory, DateTimeOffset expiresIn)
-        {
-            return GetOrCreate(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
-        }
+        public async Task<T> GetOrCreateAsync<T>(int key, Func<Task<T>> factory, TimeSpan ttl) =>
+            await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
 
-        public async Task<T> GetOrCreateAsync<T>(object key, Func<Task<T>> factory, DateTimeOffset expiresIn)
-        {
-            return await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
-        }
+        public async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory, TimeSpan ttl) =>
+            await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
+
+        public T GetOrCreate<T>(int key, Func<T> factory, DateTimeOffset expiresIn) =>
+            GetOrCreate(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
+
+        public T GetOrCreate<T>(string key, Func<T> factory, DateTimeOffset expiresIn) =>
+            GetOrCreate(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
+
+        public async Task<T> GetOrCreateAsync<T>(int key, Func<Task<T>> factory, DateTimeOffset expiresIn) =>
+            await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
+
+        public async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory, DateTimeOffset expiresIn) =>
+            await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
+
+        public void Delete(int key) => _cache.Remove(key);
+
+        public void Delete(string key) => _cache.Remove(key);
 
         private T GetOrCreate<T>(object key, Func<T> factory, Action<ICacheEntry> setExpiration)
         {
@@ -122,6 +130,11 @@ namespace Mtk.CacheOnce
                 _cache.Remove(key);
                 return default(T);
             }
+        }
+
+        public void Dispose()
+        {
+            _lock?.Dispose();
         }
     }
 }

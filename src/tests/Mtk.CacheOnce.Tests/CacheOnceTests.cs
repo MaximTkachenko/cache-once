@@ -15,7 +15,7 @@ namespace Mtk.CacheOnce.Tests
         public async Task GetOrCreate_MultipleThreads_InitOnceAndAllValuesTheSame(bool perKey)
         {
             var cnt = 20;
-            var cache = new CacheOnce(new MemoryCache(new MemoryCacheOptions()), perKey);
+            var cache = new LocalCacheOnce(new MemoryCache(new MemoryCacheOptions()), perKey);
             var service = new TestInitializationService();
             var bag = new ConcurrentBag<int>();
 
@@ -41,7 +41,7 @@ namespace Mtk.CacheOnce.Tests
         public async Task GetOrCreateAsync_MultipleThreads_InitOnceAndAllValuesTheSame(bool perKey)
         {
             var cnt = 20;
-            var cache = new CacheOnce(new MemoryCache(new MemoryCacheOptions()), perKey);
+            var cache = new LocalCacheOnce(new MemoryCache(new MemoryCacheOptions()), perKey);
             var service = new TestInitializationService();
             var bag = new ConcurrentBag<int>();
 
@@ -67,7 +67,7 @@ namespace Mtk.CacheOnce.Tests
         public async Task GetOrCreateAsync_MultipleThreadsCallFailedMethod_FailedKeyRemovedThenInitAgain(bool perKey)
         {
             var cnt = 20;
-            var cache = new CacheOnce(new MemoryCache(new MemoryCacheOptions()), perKey);
+            var cache = new LocalCacheOnce(new MemoryCache(new MemoryCacheOptions()), perKey);
             var service = new TestInitializationService();
             var bag = new ConcurrentBag<int>();
 
@@ -98,7 +98,7 @@ namespace Mtk.CacheOnce.Tests
         public async Task GetOrCreateAsync_MultipleThreadsCallUnstableMethodWithRetryAsync_ValueFinallyInitiated(bool perKey)
         {
             var cnt = 20;
-            var cache = new CacheOnce(new MemoryCache(new MemoryCacheOptions()), perKey);
+            var cache = new LocalCacheOnce(new MemoryCache(new MemoryCacheOptions()), perKey);
             var service = new TestInitializationService();
             var bag = new ConcurrentBag<int>();
             int successAfter = 4;
