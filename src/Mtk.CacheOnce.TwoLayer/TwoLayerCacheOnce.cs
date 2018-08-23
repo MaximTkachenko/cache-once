@@ -6,32 +6,39 @@ using ServiceStack.Redis;
 
 namespace Mtk.CacheOnce.TwoLayer
 {
+    //todo cache transitions
     public sealed class TwoLayerCacheOnce : ICacheOnce
     {
         private const string InvalidationChannel = "InvalidationChannel";
+        private static readonly TimeSpan DefaultTtl = TimeSpan.FromDays(1);
+        private static readonly TimeSpan DistributedLockTimeout = TimeSpan.FromSeconds(20);
 
         private readonly IRedisClientsManager _redis;
         private readonly ICacheOnce _localCache;
         private readonly IMemoryCache _originalLocalCache;
+        private readonly bool _notifyAboutChanges;
         private readonly IRedisPubSubServer _invalidationPubSub;
         private readonly ConcurrentDictionary<string, int> _changeLog = new ConcurrentDictionary<string, int>();
 
-        public TwoLayerCacheOnce(IRedisClientsManager redis, IMemoryCache localCache)
+        public TwoLayerCacheOnce(IRedisClientsManager redis, IMemoryCache localCache, bool notifyAboutChanges = false)
         {
             _redis = redis;
             _originalLocalCache = localCache;
             _localCache = new LocalCacheOnce(localCache, false);
+            _notifyAboutChanges = notifyAboutChanges;
 
-            //todo optional?
-            _invalidationPubSub = _redis.CreatePubSubServer(InvalidationChannel);
-            _invalidationPubSub.OnMessage += (channel, key) =>
+            if (notifyAboutChanges)
             {
-                if (!_changeLog.TryRemove(key, out _))
+                _invalidationPubSub = _redis.CreatePubSubServer(InvalidationChannel);
+                _invalidationPubSub.OnMessage += (channel, key) =>
                 {
-                    _localCache.Delete(key);
-                }
-            };
-            _invalidationPubSub.Start();
+                    if (!_changeLog.TryRemove(key, out _))
+                    {
+                        _originalLocalCache.Remove(key);
+                    }
+                };
+                _invalidationPubSub.Start();
+            }
         }
 
         public T GetOrCreate<T>(int key, Func<T> factory, TimeSpan ttl) =>
@@ -81,30 +88,46 @@ namespace Mtk.CacheOnce.TwoLayer
                 {
                     T value;
                     using (var redis = _redis.GetClient())
-                    using (redis.AcquireLock(key + ":lock", TimeSpan.FromSeconds(3)))
+                    using (redis.AcquireLock(key + ":lock", DistributedLockTimeout))
                     {
                         value = redis.Get<T>(key);
-                        if (value.Equals(default(T)))
+                        if (value == null || value.Equals(default(T)))
                         {
                             value = factory.Invoke();
-                            if (!value.Equals(default(T)))
+                            if (ttlGet != null)
                             {
-                                if (ttlGet != null)
-                                {
-                                    ttl = ttlGet.Invoke(value);
-                                }
+                                ttl = ttlGet.Invoke(value);
+                            }
 
-                                redis.Set(key, value, ttl ?? TimeSpan.FromDays(100));
+                            ttl = ttl ?? DefaultTtl;
+
+                            redis.Set(key, value, ttl.Value);
+                            if (_notifyAboutChanges)
+                            {
                                 _changeLog[key] = 1;
-                                _originalLocalCache.Set(key, new Lazy<T>(() => value), ttl ?? TimeSpan.FromDays(100));
+                            }
+
+                            if (ttlGet != null)
+                            {
+                                _originalLocalCache.Set(key, new Lazy<T>(() => value), ttl.Value);
+                            }
+
+                            if (_notifyAboutChanges)
+                            {
                                 redis.PublishMessage(InvalidationChannel, key);
                             }
                         }
                         else
                         {
                             ttl = redis.GetTimeToLive(key);
-                            //todo is ok?
-                            _originalLocalCache.Set(key, new Lazy<T>(() => value), ttl ?? TimeSpan.FromDays(100));
+                            if (ttl.HasValue)
+                            {
+                                _originalLocalCache.Set(key, new Lazy<T>(() => value), ttl.Value);
+                            }
+                            else
+                            {
+                                _originalLocalCache.Remove(key);
+                            }
                         }
                     }
 
@@ -120,36 +143,52 @@ namespace Mtk.CacheOnce.TwoLayer
                 {
                     T value;
                     using (var redis = _redis.GetClient())
-                    using (redis.AcquireLock(key + ":lock", TimeSpan.FromSeconds(3)))
+                    using (redis.AcquireLock(key + ":lock", DistributedLockTimeout))
                     {
                         value = redis.Get<T>(key);
-                        if (value.Equals(default(T)))
+                        if (value == null || value.Equals(default(T)))
                         {
                             value = await factory.Invoke();
-                            if (!value.Equals(default(T)))
+                            if (ttlGet != null)
                             {
-                                if (ttlGet != null)
-                                {
-                                    ttl = ttlGet.Invoke(value);
-                                }
+                                ttl = ttlGet.Invoke(value);
+                            }
 
-                                redis.Set(key, value, ttl ?? TimeSpan.FromDays(100));
+                            ttl = ttl ?? DefaultTtl;
+
+                            redis.Set(key, value, ttl.Value);
+                            if (_notifyAboutChanges)
+                            {
                                 _changeLog[key] = 1;
-                                await _originalLocalCache.Set(key, Task.FromResult(value), ttl ?? TimeSpan.FromDays(100));
+                            }
+                            
+                            if (ttlGet != null)
+                            {
+                                await _originalLocalCache.Set(key, Task.FromResult(value), ttl.Value);
+                            }
+
+                            if (_notifyAboutChanges)
+                            {
                                 redis.PublishMessage(InvalidationChannel, key);
                             }
                         }
                         else
                         {
                             ttl = redis.GetTimeToLive(key);
-                            //todo is ok?
-                            await _originalLocalCache.Set(key, Task.FromResult(value), ttl ?? TimeSpan.FromDays(100));
+                            if (ttl.HasValue)
+                            { 
+                                await _originalLocalCache.Set(key, Task.FromResult(value), ttl.Value);
+                            }
+                            else
+                            {
+                                _originalLocalCache.Remove(key);
+                            }
                         }
                     }
 
                     return value;
                 },
-                ttl ?? TimeSpan.FromHours(1));
+                ttl ?? DefaultTtl);
         }
     }
 }
