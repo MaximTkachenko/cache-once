@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using Mtk.CacheOnce;
@@ -13,7 +12,6 @@ namespace TwoLayerCacheSample
         private static readonly IRedisClientsManager ClientsManager = new RedisManagerPool("localhost:6379?db=1");
         private static readonly ICacheOnce Cache = new TwoLayerCacheOnce(ClientsManager, new MemoryCache(new MemoryCacheOptions()));
         private static readonly string AppId = Guid.NewGuid().ToString();
-        private static readonly HttpClient HttpClient = new HttpClient();
 
         static void Main(string[] args)
         {
@@ -34,16 +32,22 @@ namespace TwoLayerCacheSample
                 {
                     tasks[i] = Task.Run(async () =>
                     {
-                        string code = await Cache.GetOrCreateAsync("2layercache:data", async () =>
+                        var code = await Cache.GetOrCreateAsync("2layercache:data", async () =>
                             {
                                 await Task.Delay(1000);
-                                var result = AppId;
-                                Console.WriteLine($"IN LOCK: {result}");
+
+                                //var result = AppId;
+                                var result = new Item {Data = AppId};
+
+                                Console.WriteLine("CALL INIT LOGIC");
                                 return result;
                             },
-                            TimeSpan.FromSeconds(20));
 
-                        Console.WriteLine(code);
+                            //TimeSpan.FromSeconds(20));
+                            v => v.Expired);
+
+                        //Console.WriteLine(code);
+                        Console.WriteLine(code.Data);
                     });
                 }
 
@@ -51,6 +55,12 @@ namespace TwoLayerCacheSample
                 Console.WriteLine("----------------------");
                 await Task.Delay(5000);
             }
+        }
+
+        public class Item
+        {
+            public string Data { get; set; }
+            public TimeSpan Expired { get; set; } = TimeSpan.FromSeconds(20);
         }
     }
 }
