@@ -19,42 +19,56 @@ namespace Mtk.CacheOnce
         }
 
         public T GetOrCreate<T>(int key, Func<T> factory, TimeSpan ttl) =>
-            GetOrCreate(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
+            GetOrCreate(key, factory, ttl, null);
+
+        public T GetOrCreate<T>(int key, Func<T> factory, Func<T, TimeSpan> ttlGet) =>
+            GetOrCreate(key, factory, null, ttlGet);
 
         public T GetOrCreate<T>(string key, Func<T> factory, TimeSpan ttl) =>
-            GetOrCreate(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
+            GetOrCreate(key, factory, ttl, null);
+
+        public T GetOrCreate<T>(string key, Func<T> factory, Func<T, TimeSpan> ttlGet) =>
+            GetOrCreate(key, factory, null, ttlGet);
 
         public async Task<T> GetOrCreateAsync<T>(int key, Func<Task<T>> factory, TimeSpan ttl) =>
-            await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
+            await GetOrCreateAsync(key, factory, ttl, null);
+
+        public async Task<T> GetOrCreateAsync<T>(int key, Func<Task<T>> factory, Func<T, TimeSpan> ttlGet) =>
+            await GetOrCreateAsync(key, factory, null, ttlGet);
 
         public async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory, TimeSpan ttl) =>
-            await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpirationRelativeToNow = ttl);
+            await GetOrCreateAsync(key, factory, ttl, null);
 
-        public T GetOrCreate<T>(int key, Func<T> factory, DateTimeOffset expiresIn) =>
-            GetOrCreate(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
-
-        public T GetOrCreate<T>(string key, Func<T> factory, DateTimeOffset expiresIn) =>
-            GetOrCreate(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
-
-        public async Task<T> GetOrCreateAsync<T>(int key, Func<Task<T>> factory, DateTimeOffset expiresIn) =>
-            await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
-
-        public async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory, DateTimeOffset expiresIn) =>
-            await GetOrCreateAsync(key, factory, entry => entry.AbsoluteExpiration = expiresIn);
+        public async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory, Func<T, TimeSpan> ttlGet) =>
+            await GetOrCreateAsync(key, factory, null, ttlGet);
 
         public void Delete(int key) => _cache.Remove(key);
 
         public void Delete(string key) => _cache.Remove(key);
 
-        private T GetOrCreate<T>(object key, Func<T> factory, Action<ICacheEntry> setExpiration)
+        private T GetOrCreate<T>(object key, Func<T> factory, TimeSpan? ttl, Func<T, TimeSpan> ttlGet)
         {
-            Lazy<T> value;
+            Lazy<T> lazyValue;
             Func<Lazy<T>> action = () =>
             {
                 return _cache.GetOrCreate(key, entry =>
                 {
-                    setExpiration(entry);
-                    return new Lazy<T>(factory.Invoke);
+                    if (ttl.HasValue)
+                    {
+                        entry.AbsoluteExpirationRelativeToNow = ttl.Value;
+                    }
+
+                    return new Lazy<T>(() =>
+                    {
+                        var value = factory.Invoke();
+                        if (ttlGet != null)
+                        {
+                            var ttlGetResult = ttlGet.Invoke(value);
+                            _cache.Set(key, new Lazy<T>(() => value), ttlGetResult);
+                        }
+
+                        return value;
+                    });
                 });
             };
 
@@ -62,7 +76,7 @@ namespace Mtk.CacheOnce
             {
                 using (_keyedLock.Lock(key))
                 {
-                    value = action.Invoke();
+                    lazyValue = action.Invoke();
                 }
             }
             else
@@ -70,7 +84,7 @@ namespace Mtk.CacheOnce
                 _lock.Wait();
                 try
                 {
-                    value = action.Invoke();
+                    lazyValue = action.Invoke();
                 }
                 finally
                 {
@@ -80,7 +94,7 @@ namespace Mtk.CacheOnce
 
             try
             {
-                return value.Value;
+                return lazyValue.Value;
             }
             catch
             {
@@ -89,14 +103,32 @@ namespace Mtk.CacheOnce
             }
         }
 
-        private async Task<T> GetOrCreateAsync<T>(object key, Func<Task<T>> factory, Action<ICacheEntry> setExpiration)
+        private async Task<T> GetOrCreateAsync<T>(object key, Func<Task<T>> factory, TimeSpan? ttl, Func<T, TimeSpan> ttlGet)
         {
-            Task<T> value;
+            Task<T> awaitableValue;
+
+            var originalFactory = factory;
+            factory = async () =>
+            {
+                var value = await originalFactory.Invoke().ConfigureAwait(false);
+                if (ttlGet != null)
+                {
+                    var ttlGetResult = ttlGet.Invoke(value);
+                    await _cache.Set(key, Task.FromResult(value), ttlGetResult);
+                }
+
+                return value;
+            };
+
             Func<Task<T>> action = () =>
             {
                 return _cache.GetOrCreate(key, entry =>
                 {
-                    setExpiration(entry);
+                    if (ttl.HasValue)
+                    {
+                        entry.AbsoluteExpirationRelativeToNow = ttl.Value;
+                    }
+
                     return factory.Invoke();
                 });
             };
@@ -105,7 +137,7 @@ namespace Mtk.CacheOnce
             {
                 using (await _keyedLock.LockAsync(key))
                 {
-                    value = action.Invoke();
+                    awaitableValue = action.Invoke();
                 }
             }
             else
@@ -113,7 +145,7 @@ namespace Mtk.CacheOnce
                 await _lock.WaitAsync().ConfigureAwait(false);
                 try
                 {
-                    value = action.Invoke();
+                    awaitableValue = action.Invoke();
                 }
                 finally
                 {
@@ -123,7 +155,7 @@ namespace Mtk.CacheOnce
 
             try
             {
-                return await value.ConfigureAwait(false);
+                return await awaitableValue.ConfigureAwait(false);
             }
             catch
             {
