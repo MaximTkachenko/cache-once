@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Mtk.CacheOnce.Tests
 {
-    public class CacheOnceTests
+    public class LocalCacheOnceTests
     {
         [Theory]
         [InlineData(true)]

@@ -23,7 +23,7 @@ namespace TwoLayerCacheSample
 
         static async Task MainAsync()
         {
-            var cnt = 4;
+            var cnt = 5;
 
             while (true)
             {
@@ -39,7 +39,7 @@ namespace TwoLayerCacheSample
                                 //var result = AppId;
                                 var result = new Item {Data = AppId};
 
-                                Console.WriteLine("CALL INIT LOGIC");
+                                Console.WriteLine("initialized");
                                 return result;
                             },
 
@@ -53,14 +53,14 @@ namespace TwoLayerCacheSample
 
                 await Task.WhenAll(tasks);
                 Console.WriteLine("----------------------");
-                await Task.Delay(5000);
+                await Task.Delay(3000);
             }
         }
 
         public class Item
         {
             public string Data { get; set; }
-            public TimeSpan Expired { get; set; } = TimeSpan.FromSeconds(20);
+            public TimeSpan Expired { get; set; } = TimeSpan.FromSeconds(5);
         }
     }
 }

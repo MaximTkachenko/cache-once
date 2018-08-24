@@ -48,6 +48,11 @@ namespace Mtk.CacheOnce
 
         private T GetOrCreate<T>(object key, Func<T> factory, TimeSpan? ttl, Func<T, TimeSpan> ttlGet)
         {
+            if (ttlGet == null && ttl.IsEmpty())
+            {
+                throw new ArgumentException(nameof(ttl));
+            }
+
             Lazy<T> lazyValue;
             Func<Lazy<T>> action = () =>
             {
@@ -64,6 +69,10 @@ namespace Mtk.CacheOnce
                         if (ttlGet != null)
                         {
                             var ttlGetResult = ttlGet.Invoke(value);
+                            if (ttlGetResult.IsEmpty())
+                            {
+                                throw new ArgumentException(nameof(ttlGetResult));
+                            }
                             _cache.Set(key, new Lazy<T>(() => value), ttlGetResult);
                         }
 
@@ -105,15 +114,27 @@ namespace Mtk.CacheOnce
 
         private async Task<T> GetOrCreateAsync<T>(object key, Func<Task<T>> factory, TimeSpan? ttl, Func<T, TimeSpan> ttlGet)
         {
+            if (ttlGet == null && ttl.IsEmpty())
+            {
+                throw new ArgumentException(nameof(ttl));
+            }
+
             Task<T> awaitableValue;
 
             var originalFactory = factory;
             factory = async () =>
             {
+#if DEBUG
+                Console.WriteLine("set in local");
+#endif
                 var value = await originalFactory.Invoke().ConfigureAwait(false);
                 if (ttlGet != null)
                 {
                     var ttlGetResult = ttlGet.Invoke(value);
+                    if (ttlGetResult.IsEmpty())
+                    {
+                        throw new ArgumentException(nameof(ttlGetResult));
+                    }
                     await _cache.Set(key, Task.FromResult(value), ttlGetResult);
                 }
 

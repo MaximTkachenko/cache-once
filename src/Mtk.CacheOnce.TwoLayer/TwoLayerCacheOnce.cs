@@ -10,7 +10,7 @@ namespace Mtk.CacheOnce.TwoLayer
     public sealed class TwoLayerCacheOnce : ICacheOnce
     {
         private const string InvalidationChannel = "InvalidationChannel";
-        private static readonly TimeSpan DefaultTtl = TimeSpan.FromDays(1);
+        private static readonly TimeSpan DefaultTtl = TimeSpan.FromHours(1);
         private static readonly TimeSpan DistributedLockTimeout = TimeSpan.FromSeconds(20);
 
         private readonly IRedisClientsManager _redis;
@@ -83,6 +83,11 @@ namespace Mtk.CacheOnce.TwoLayer
 
         private T GetOrCreateInternal<T>(string key, Func<T> factory, TimeSpan? ttl, Func<T, TimeSpan> ttlGet)
         {
+            if (ttlGet == null && ttl.IsEmpty())
+            {
+                throw new ArgumentException(nameof(ttl));
+            }
+
             return _localCache.GetOrCreate(key,
                 () =>
                 {
@@ -99,13 +104,19 @@ namespace Mtk.CacheOnce.TwoLayer
                                 ttl = ttlGet.Invoke(value);
                             }
 
-                            ttl = ttl ?? DefaultTtl;
+                            if (ttl.IsEmpty())
+                            {
+                                throw new ArgumentException(nameof(ttl));
+                            }
 
                             redis.Set(key, value, ttl.Value);
                             if (_notifyAboutChanges)
                             {
                                 _changeLog[key] = 1;
                             }
+#if DEBUG
+                            Console.WriteLine("set in redis");
+#endif
 
                             if (ttlGet != null)
                             {
@@ -120,24 +131,32 @@ namespace Mtk.CacheOnce.TwoLayer
                         else
                         {
                             ttl = redis.GetTimeToLive(key);
-                            if (ttl.HasValue)
+#if DEBUG
+                            Console.WriteLine("get from redis");
+#endif
+                            if (ttl.IsEmpty())
                             {
-                                _originalLocalCache.Set(key, new Lazy<T>(() => value), ttl.Value);
+                                _originalLocalCache.Remove(key);
                             }
                             else
                             {
-                                _originalLocalCache.Remove(key);
+                                _originalLocalCache.Set(key, new Lazy<T>(() => value), ttl.Value);
                             }
                         }
                     }
 
                     return value;
                 },
-                ttl ?? TimeSpan.FromHours(1));
+                ttl ?? DefaultTtl);
         }
 
         private Task<T> GetOrCreateInternalAsync<T>(string key, Func<Task<T>> factory, TimeSpan? ttl, Func<T, TimeSpan> ttlGet)
         {
+            if (ttlGet == null && ttl.IsEmpty())
+            {
+                throw new ArgumentException(nameof(ttl));
+            }
+
             return _localCache.GetOrCreateAsync(key,
                 async () =>
                 {
@@ -154,9 +173,15 @@ namespace Mtk.CacheOnce.TwoLayer
                                 ttl = ttlGet.Invoke(value);
                             }
 
-                            ttl = ttl ?? DefaultTtl;
+                            if (ttl.IsEmpty())
+                            {
+                                throw new ArgumentException(nameof(ttl));
+                            }
 
                             redis.Set(key, value, ttl.Value);
+#if DEBUG
+                            Console.WriteLine("set in redis");
+#endif
                             if (_notifyAboutChanges)
                             {
                                 _changeLog[key] = 1;
@@ -175,13 +200,16 @@ namespace Mtk.CacheOnce.TwoLayer
                         else
                         {
                             ttl = redis.GetTimeToLive(key);
-                            if (ttl.HasValue)
-                            { 
-                                await _originalLocalCache.Set(key, Task.FromResult(value), ttl.Value);
+#if DEBUG
+                            Console.WriteLine("get from redis");
+#endif
+                            if (ttl.IsEmpty())
+                            {
+                                _originalLocalCache.Remove(key);
                             }
                             else
                             {
-                                _originalLocalCache.Remove(key);
+                                await _originalLocalCache.Set(key, Task.FromResult(value), ttl.Value);
                             }
                         }
                     }
