@@ -156,7 +156,7 @@ namespace Mtk.CacheOnce
 
             if (_lockPerKey)
             {
-                using (await _keyedLock.LockAsync(key))
+                using (await _keyedLock.LockAsync(key).ConfigureAwait(false))
                 {
                     awaitableValue = action.Invoke();
                 }

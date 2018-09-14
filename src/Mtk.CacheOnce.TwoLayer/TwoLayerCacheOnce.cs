@@ -68,12 +68,16 @@ namespace Mtk.CacheOnce.TwoLayer
 
         public void Delete(int key)
         {
-            _localCache.Delete(key);
+            Delete(key.ToString());
         }
 
-        public void Delete(string key)
+        public void Delete(string key) 
         {
-            _localCache.Delete(key);
+            using (var redis = _redis.GetClient())
+            {
+                redis.Remove(key);
+                redis.PublishMessage(InvalidationChannel, key);
+            }
         }
 
         public void Dispose()
