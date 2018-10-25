@@ -10,6 +10,8 @@ namespace Mtk.CacheOnce
         private static readonly SemaphoreSlim SyncSemaphore = new SemaphoreSlim(1, 1);
         private static readonly SemaphoreSlim AsyncSemaphore = new SemaphoreSlim(1, 1);
 
+        public static void DeleteOnce(this IMemoryCache cache, object key) => cache.Remove(key);
+
         public static T GetOrCreateOnce<T>(this IMemoryCache cache, object key, Func<T> factory, TimeSpan ttl) =>
             GetOrCreateOnceLazy(cache, key, factory, ttl);
 
@@ -23,6 +25,17 @@ namespace Mtk.CacheOnce
             }, TimeSpan.FromHours(1));
         }
 
+        public static Task DeleteOnceAsync(this IMemoryCache cache, object key)
+        {
+            var task = cache.Get<Task>(key);
+            if (task == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            return task.ContinueWith(prev => cache.Remove(key));
+        }
+
         public static Task<T> GetOrCreateOnceAsync<T>(this IMemoryCache cache, object key, Func<Task<T>> factory, TimeSpan ttl) =>
             GetOrCreateOnceTaskAsync(cache, key, factory, ttl);
 
@@ -31,7 +44,7 @@ namespace Mtk.CacheOnce
             return GetOrCreateOnceTaskAsync(cache, key, async () =>
             {
                 var value = await factory.Invoke().ConfigureAwait(false);
-                await cache.Set(key, Task.FromResult(value), ttlGet.Invoke(value));
+                await cache.Set(key, Task.FromResult(value), ttlGet.Invoke(value));//replace existing cache item with new item using calculated ttl
                 return value;
             }, TimeSpan.FromHours(1));
         }
