@@ -11,7 +11,7 @@ namespace Mtk.CacheOnce.Tests
     public class MemoryCacheOnceExtensionsTests
     {
         [Fact]
-        public async Task GetOrCreateOnceAsync_WithTtlWhithMulipleThreads_InitOnce()
+        public async Task IssueOnceAsync_WithTtlWhithMulipleThreads_InitOnce()
         {
             var threadsCount = 10;
             var cache = new MemoryCache(new MemoryCacheOptions());
@@ -23,7 +23,7 @@ namespace Mtk.CacheOnce.Tests
             {
                 tasks[i] = Task.Run(() =>
                 {
-                    return cache.GetOrCreateOnceAsync("bla",
+                    return cache.IssueOnceAsync("bla",
                         async () =>
                         {
                             await Task.Delay(200);
@@ -41,7 +41,7 @@ namespace Mtk.CacheOnce.Tests
         }
 
         [Fact]
-        public async Task GetOrCreateOnceAsync_WithTtlGetWhithMulipleThreads_InitOnce()
+        public async Task IssueOnceAsync_WithTtlGetWhithMulipleThreads_InitOnce()
         {
             var threadsCount = 10;
             var cache = new MemoryCache(new MemoryCacheOptions());
@@ -53,7 +53,7 @@ namespace Mtk.CacheOnce.Tests
             {
                 tasks[i] = Task.Run(() =>
                 {
-                    return cache.GetOrCreateOnceAsync("bla",
+                    return cache.IssueOnceAsync("bla",
                         async () =>
                         {
                             await Task.Delay(200);
@@ -73,7 +73,7 @@ namespace Mtk.CacheOnce.Tests
         }
 
         [Fact]
-        public async Task GetOrCreateOnceAsync_ExceptionWhithMulipleThreads_CacheItemRemoved()
+        public async Task IssueOnceAsync_ExceptionWhithMulipleThreads_CacheItemRemoved()
         {
             var threadsCount = 10;
             var cache = new MemoryCache(new MemoryCacheOptions());
@@ -85,7 +85,7 @@ namespace Mtk.CacheOnce.Tests
                 tasks[i] = Task.Run(() =>
                 {
                     Func<Task> action = async () =>
-                        await cache.GetOrCreateOnceAsync("bla",
+                        await cache.IssueOnceAsync("bla",
                             async () =>
                             {
                                 await Task.Delay(200);
@@ -108,44 +108,7 @@ namespace Mtk.CacheOnce.Tests
         }
 
         [Fact]
-        public void DeleteOnceAsync_NoItem_NoException()
-        {
-            var cache = new MemoryCache(new MemoryCacheOptions());
-
-            Func<Task> action = () => cache.DeleteOnceAsync("bla");
-
-            action.Should().NotThrow();
-        }
-
-        [Fact]
-        public async Task DeleteOnceAsync_WithTtl_Removed()
-        {
-            var threadsCount = 10;
-            var cache = new MemoryCache(new MemoryCacheOptions());
-
-            var tasks = new Task[threadsCount];
-            for (int i = 0; i < threadsCount; i++)
-            {
-                tasks[i] = Task.Run(() =>
-                {
-                    return cache.GetOrCreateOnceAsync("bla",
-                        async () =>
-                        {
-                            await Task.Delay(200);
-                            return (1, TimeSpan.FromHours(100));
-                        },
-                        d => d.Item2);
-                });
-            }
-
-            await Task.WhenAll(tasks);
-            await Task.Run(() => cache.DeleteOnceAsync("bla"));
-
-            cache.TryGetValue("bla", out _).Should().BeFalse();
-        }
-
-        [Fact]
-        public async Task GetOrCreateOnceAsync_NestedCachUsage_InitOnceNoDeadlock()
+        public async Task IssueOnceAsync_NestedCachUsage_InitOnceNoDeadlock()
         {
             var threadsCount = 10;
             var cache = new MemoryCache(new MemoryCacheOptions());
@@ -156,7 +119,7 @@ namespace Mtk.CacheOnce.Tests
             {
                 tasks[i] = Task.Run(() =>
                 {
-                    return cache.GetOrCreateOnceAsync("bla",
+                    return cache.IssueOnceAsync("bla",
                         async () =>
                         {
                             await Task.Delay(1000);
@@ -173,9 +136,44 @@ namespace Mtk.CacheOnce.Tests
             cache.TryGetValue("bla", out _).Should().BeTrue();
         }
 
-        private Task<int> GetIntCached(MemoryCache cache)
+        [Fact]
+        public async Task IssueOnceAsync_WithInvalidValue_RenewOnceNoDeadlock()
         {
-            return cache.GetOrCreateOnceAsync("result", GetInt, TimeSpan.FromHours(1));
+            var threadsCount = 5;
+            var cache = new MemoryCache(new MemoryCacheOptions());
+            var firstValue = "firstValue";
+            var secondValue = "secondValue";
+
+            await cache.IssueOnceAsync("bla",
+                () => Task.FromResult(firstValue),
+                TimeSpan.FromHours(1));
+
+            var tasks = new Task<string>[threadsCount];
+            int calls = 0;
+            for (int i = 0; i < threadsCount; i++)
+            {
+                tasks[i] = Task.Run(() =>
+                {
+                    return cache.IssueOnceAsync("bla",
+                        async () =>
+                        {
+                            await Task.Delay(100);
+                            Interlocked.Increment(ref calls);
+                            return await Task.FromResult(secondValue);
+                        },
+                        TimeSpan.FromHours(1), firstValue);
+                });
+            }
+
+            await Task.WhenAll(tasks);
+            tasks.Select(t => t.Result).All(v => v == secondValue).Should().BeTrue();
+            calls.Should().Be(1);
+            cache.TryGetValue("bla", out _).Should().BeTrue();
+        }
+
+        private Task<int> GetIntCached(IMemoryCache cache)
+        {
+            return cache.IssueOnceAsync("result", GetInt, TimeSpan.FromHours(1));
         }
 
         private async Task<int> GetInt()
