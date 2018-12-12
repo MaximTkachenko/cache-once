@@ -81,7 +81,7 @@ namespace Mtk.CacheOnce.Tests
             var results = new ConcurrentBag<int>();
 
             var tasks = new Task[TaskCount];
-            var maxIndexToFail = 5;
+            var maxIndexToFail = TaskCount / 2;
             int calls = 0;
             for (int i = 0; i < TaskCount; i++)
             {
