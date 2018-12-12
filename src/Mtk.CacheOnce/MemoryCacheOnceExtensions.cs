@@ -10,9 +10,15 @@ namespace Mtk.CacheOnce
     {
         private static readonly SemaphoreSlim AsyncSemaphore = new SemaphoreSlim(1, 1);
 
+        /// <summary>
+        /// Factory delegate should throw exception in case of fail to be invalidated in cache
+        /// </summary>
         public static Task<T> IssueOnceAsync<T>(this IMemoryCache cache, object key, Func<Task<T>> factory, TimeSpan ttl, T invalidValue = default(T)) =>
             GetOrCreateOnceTaskAsync(cache, key, factory, ttl, invalidValue);
 
+        /// <summary>
+        /// Factory delegate should throw exception in case of fail to be invalidated in cache
+        /// </summary>
         public static Task<T> IssueOnceAsync<T>(this IMemoryCache cache, object key, Func<Task<T>> factory, Func<T, TimeSpan> ttlGet, T invalidValue = default(T))
         {
             return GetOrCreateOnceTaskAsync(cache, key, async () =>
@@ -29,12 +35,14 @@ namespace Mtk.CacheOnce
             var comparer = EqualityComparer<T>.Default;
 
             if (!cache.TryGetValue(key, out Task<T> task)
+                || task.IsFaulted
                 || (task.IsCompleted && !comparer.Equals(invalidValue, default(T)) && comparer.Equals(task.Result, invalidValue)))
             {
                 await AsyncSemaphore.WaitAsync().ConfigureAwait(false);
                 try
                 {
                     if (!cache.TryGetValue(key, out task)
+                        || task.IsFaulted
                         || (task.IsCompleted && !comparer.Equals(invalidValue, default(T)) && comparer.Equals(task.Result, invalidValue)))
                     {
                         task = cache.Set(key, factory.Invoke(), ttl);
@@ -52,7 +60,6 @@ namespace Mtk.CacheOnce
             }
             catch
             {
-                cache.Remove(key);
                 return default(T);
             }
         }
