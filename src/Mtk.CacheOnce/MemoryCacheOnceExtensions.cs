@@ -8,7 +8,7 @@ namespace Mtk.CacheOnce
 {
     public static class MemoryCacheOnceExtensions
     {
-        private static readonly SemaphoreSlim AsyncSemaphore = new SemaphoreSlim(1, 1);
+        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// Factory delegate should throw exception in case of fail to be invalidated in cache
@@ -38,7 +38,7 @@ namespace Mtk.CacheOnce
                 || task.IsFaulted
                 || (task.IsCompleted && !comparer.Equals(invalidValue, default(T)) && comparer.Equals(task.Result, invalidValue)))
             {
-                await AsyncSemaphore.WaitAsync().ConfigureAwait(false);
+                await Semaphore.WaitAsync().ConfigureAwait(false);
                 try
                 {
                     if (!cache.TryGetValue(key, out task)
@@ -50,7 +50,7 @@ namespace Mtk.CacheOnce
                 }
                 finally
                 {
-                    AsyncSemaphore.Release();
+                    Semaphore.Release();
                 }
             }
 

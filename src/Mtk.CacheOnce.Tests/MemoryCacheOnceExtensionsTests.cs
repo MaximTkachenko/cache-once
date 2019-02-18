@@ -14,7 +14,7 @@ namespace Mtk.CacheOnce.Tests
         private const int TaskCount = 10;
 
         [Fact]
-        public async Task IssueOnceAsync_WithTtlWhithMulipleThreads_InitOnce()
+        public async Task IssueOnceAsync_WithTtlWithMultipleThreads_InitOnce()
         {
             var cache = new MemoryCache(new MemoryCacheOptions());
             int result = 0;
@@ -43,7 +43,7 @@ namespace Mtk.CacheOnce.Tests
         }
 
         [Fact]
-        public async Task IssueOnceAsync_WithTtlGetWhithMulipleThreads_InitOnce()
+        public async Task IssueOnceAsync_WithTtlGetWithMultipleThreads_InitOnce()
         {
             var cache = new MemoryCache(new MemoryCacheOptions());
             int result = 0;
@@ -121,7 +121,7 @@ namespace Mtk.CacheOnce.Tests
         }
 
         [Fact]
-        public async Task IssueOnceAsync_NestedCachUsage_InitOnceNoDeadlock()
+        public async Task IssueOnceAsync_NestedCacheUsage_InitOnceNoDeadlock()
         {
             var cache = new MemoryCache(new MemoryCacheOptions());
 
