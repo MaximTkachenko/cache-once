@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Mtk.CacheOnce
 {
+    //todo check benchmarks, probably need fine grained lock
     public static class MemoryCacheOnceExtensions
     {
         private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
