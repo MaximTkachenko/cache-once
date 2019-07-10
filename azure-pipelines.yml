@@ -11,7 +11,7 @@ pool:
 
 steps:
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet build'
+  displayName: 'build'
   inputs:
     command: 'build'
     projects: 'src/*/*.csproj'
