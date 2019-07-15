@@ -1,4 +1,4 @@
-[![Build Status](https://dev.azure.com/mtkorg/cache-once/_apis/build/status/MaximTkachenko.cache-once?branchName=master)](https://dev.azure.com/mtkorg/cache-once/_build/latest?definitionId=1&branchName=master)
+[![Build Status](https://dev.azure.com/mtkorg/oss-projects/_apis/build/status/MaximTkachenko.cache-once?branchName=master)](https://dev.azure.com/mtkorg/oss-projects/_build/latest?definitionId=2&branchName=master)
 
 # cache-once
 
