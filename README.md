@@ -6,4 +6,5 @@ Cache results of HTTP requests, db queries etc. calling initialization logic exa
 
 ## Tasks
 - fix benchmarks
+- add this https://adamsitnik.com/ConcurrencyVisualizer-Profiler/
 - read https://developers.google.com/api-client-library/dotnet/guide/aaa_oauth for inspiration
