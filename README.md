@@ -1,4 +1,4 @@
-[![Build Status](https://dev.azure.com/mtkorg/oss-projects/_apis/build/status/MaximTkachenko.cache-once?branchName=master)](https://dev.azure.com/mtkorg/oss-projects/_build/latest?definitionId=2&branchName=master)
+![.NET Core](https://github.com/MaximTkachenko/cache-once/workflows/.NET%20Core/badge.svg)
 
 # cache-once
 
