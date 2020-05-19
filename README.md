@@ -10,4 +10,4 @@ It's implemented as a set of extension methods for [IMemoryCache](https://docs.m
 - fix benchmarks
 - add this https://adamsitnik.com/ConcurrencyVisualizer-Profiler/
 - read https://developers.google.com/api-client-library/dotnet/guide/aaa_oauth for inspiration
-- try fine grained lock approach
+- try fine grained lock approach - https://github.com/khalidsalomao/SimpleHelpers.Net/blob/master/SimpleHelpers/NamedLock.cs
